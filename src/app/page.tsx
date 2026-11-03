@@ -11,7 +11,7 @@
 // ============================================================
 
 import { useEffect, useState } from 'react'
-import { useL, useBi, LangSwitch, type Bi } from '@/lib/i18n'
+import { useL, useBi, LangSwitch, type Bi, useTitle } from '@/lib/i18n'
 import { TYPES, QUADRAS, FUNCTIONS, DICHOTOMIES, type QuadraId, type SocioType } from '@/lib/socionics-data'
 import {
   buildRound, typeByRu, baseFunction, dualOf, modelA,
@@ -101,6 +101,8 @@ const RECORDS_KEY = 'socionika-records'
 
 export default function SocionicsTrainer() {
   const L = useL()
+  useTitle('Соціоніка: тренажер — 16 типів', 'Соционика: тренажёр — 16 типов')
+
   const B = useBi()
   const [screen, setScreen] = useState<Screen>('start')
   const [intl, setIntl] = useState(false)
