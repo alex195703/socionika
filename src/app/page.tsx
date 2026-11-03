@@ -11,8 +11,8 @@
 // ============================================================
 
 import { useEffect, useState } from 'react'
-import { useL, useBi, LangSwitch, type Bi, useTitle } from '@/lib/i18n'
-import { TYPES, QUADRAS, FUNCTIONS, DICHOTOMIES, type QuadraId, type SocioType } from '@/lib/socionics-data'
+import { useL, useBi, useLang, LangSwitch, type Bi, useTitle } from '@/lib/i18n'
+import { TYPES, QUADRAS, FUNCTIONS, DICHOTOMIES, ukAbbr, type QuadraId, type SocioType } from '@/lib/socionics-data'
 import {
   buildRound, typeByRu, baseFunction, dualOf, modelA,
   RELATION_INFO, RELATION_NAMES, TOPIC_LABELS, TOPIC_HINTS,
@@ -48,7 +48,7 @@ const TERMS: { term: Bi; text: Bi }[] = [
   {
     term: { uk: 'Тип особистості (ТИМ)', ru: 'Тип личности (ТИМ)' },
     text: {
-      uk: 'Спосіб обміну інформацією зі світом: що людина краще бачить, як ухвалює рішення та як організовує життя. Записується абревіатурою з літер дихотомій, наприклад ИЛЭ.',
+      uk: 'Спосіб обміну інформацією зі світом: що людина краще бачить, як ухвалює рішення та як організовує життя. Записується абревіатурою з літер дихотомій, наприклад ІЛЕ.',
       ru: 'Способ обмена информацией с миром: что человек лучше видит, как решает и как организует жизнь. Записывается аббревиатурой из букв дихотомий, например ИЛЭ.',
     },
   },
@@ -104,6 +104,8 @@ export default function SocionicsTrainer() {
   useTitle('Соціоніка: тренажер — 16 типів', 'Соционика: тренажёр — 16 типов')
 
   const B = useBi()
+  const lang = useLang()
+  const K = (s: string) => (lang === 'uk' ? ukAbbr(s) : s)
   const [screen, setScreen] = useState<Screen>('start')
   const [intl, setIntl] = useState(false)
   const [records, setRecords] = useState<Records>({})
@@ -418,14 +420,14 @@ export default function SocionicsTrainer() {
                   modelType === t.ru ? `${QUADRA_STYLE[t.quadra].chip} border-current` : 'bg-white border-stone-200 hover:border-stone-400'
                 }`}
               >
-                {intl ? t.intl : t.ru}
+                {intl ? t.intl : K(t.ru)}
               </button>
             ))}
           </div>
           <p className="mt-4 text-stone-600">
-            <span className="font-bold">{intl ? `${mt.intl} „${mt.intlName}“` : `${mt.ru} „${mt.name}“`}</span>{' '}
+            <span className="font-bold">{intl ? `${mt.intl} „${mt.intlName}“` : `${K(mt.ru)} „${mt.name}“`}</span>{' '}
             {L('— модель А. Сугестивна (5-та) функція = базова в дуала: ', '— модель А. Суггестивная (5-я) функция = базовая у дуала: ')}
-            {intl ? dualOf(mt).intl : dualOf(mt).ru}.
+            {intl ? dualOf(mt).intl : K(dualOf(mt).ru)}.
           </p>
           <div className="mt-3 grid sm:grid-cols-2 gap-3">
             {blocks.map((b) => (
@@ -435,7 +437,7 @@ export default function SocionicsTrainer() {
                   {b.positions.map((p) => (
                     <div key={p.n} className="flex items-baseline gap-2 text-sm">
                       <span className="shrink-0 w-6 h-6 rounded-full bg-stone-900 text-white grid place-items-center text-xs font-bold">{p.n}</span>
-                      <span><b className="font-bold">{p.fn}</b> — {B(FUNCTIONS[p.fn].name)} <span className="text-stone-400">({B(p.role)})</span></span>
+                      <span><b className="font-bold">{K(p.fn)}</b> — {B(FUNCTIONS[p.fn].name)} <span className="text-stone-400">({B(p.role)})</span></span>
                     </div>
                   ))}
                 </div>
@@ -487,7 +489,7 @@ function NotationToggle({ intl, setIntl, className = '' }: { intl: boolean; setI
         onClick={() => setIntl(false)}
         className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${!intl ? 'bg-stone-900 text-white' : 'text-stone-600 hover:text-stone-900'}`}
       >
-        {L('ИЛЭ · кирилиця', 'ИЛЭ · рус')}
+        {L('ІЛЕ · кирилиця', 'ИЛЭ · рус')}
       </button>
       <button
         onClick={() => setIntl(true)}
@@ -501,15 +503,17 @@ function NotationToggle({ intl, setIntl, className = '' }: { intl: boolean; setI
 
 function TypeRow({ t, intl }: { t: SocioType; intl: boolean }) {
   const L = useL()
+  const lang = useLang()
+  const K = (s: string) => (lang === 'uk' ? ukAbbr(s) : s)
   return (
     <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 bg-white rounded-xl border border-stone-200 p-3 border-l-4 ${QUADRA_STYLE[t.quadra].border}`}>
       <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${QUADRA_STYLE[t.quadra].chip}`}>
-        {intl ? t.intl : t.ru}
+        {intl ? t.intl : K(t.ru)}
       </span>
       <span className="font-semibold">{intl ? t.intlName : t.name}</span>
-      <span className="text-xs text-stone-400">{intl ? t.ru : t.intl}</span>
+      <span className="text-xs text-stone-400">{intl ? K(t.ru) : t.intl}</span>
       <span className="text-sm text-stone-500 ml-auto">
-        {L(`базова ${baseFunction(t)} · дуал ${intl ? dualOf(t).intl : dualOf(t).ru}`, `базовая ${baseFunction(t)} · дуал ${intl ? dualOf(t).intl : dualOf(t).ru}`)}
+        {L(`базова ${ukAbbr(baseFunction(t))} · дуал ${intl ? dualOf(t).intl : ukAbbr(dualOf(t).ru)}`, `базовая ${baseFunction(t)} · дуал ${intl ? dualOf(t).intl : dualOf(t).ru}`)}
       </span>
     </div>
   )

@@ -12,7 +12,7 @@
 import type { Bi } from './i18n'
 import {
   type SocioType, type QuadraId, type FunctionId,
-  TYPES, FUNCTIONS, QUADRAS,
+  TYPES, FUNCTIONS, QUADRAS, ukAbbr,
 } from './socionics-data'
 
 // Темы викторины; «full» = все темы вперемешку
@@ -26,8 +26,10 @@ export function typeByRu(ru: string): SocioType {
   return t
 }
 
-/** Одинаковая в обоих языках строка (аббревиатуры, списки типов) */
-const bi = (s: string): Bi => ({ uk: s, ru: s })
+/** Одинаковая в обоих языках строка (аббревиатуры, списки типов).
+ *  В украинском варианте кириллические сокращения переводятся:
+ *  ИЛЭ → ІЛЕ, ЧЭ → ЧЕ (русская запись остаётся для РУС-версии). */
+const bi = (s: string): Bi => ({ uk: ukAbbr(s), ru: s })
 
 /** Как показать тип: «ИЛЭ „Дон Кихот“» или «ILE „Don Quixote“» (аббревиатуры и псевдонимы одинаковы в uk/ru) */
 export function label(t: SocioType, intl: boolean): Bi {
@@ -248,7 +250,7 @@ function qByDescription(): Question {
     options: [label(t, false), ...wrong],
     answer: label(t, false),
     explanation: {
-      uk: `Це ${label(t, false).uk} — тип квадри «${QUADRAS[t.quadra].name.uk}». Базова функція: ${baseFunction(t)} — ${FUNCTIONS[baseFunction(t)].name.uk}.`,
+      uk: `Це ${label(t, false).uk} — тип квадри «${QUADRAS[t.quadra].name.uk}». Базова функція: ${ukAbbr(baseFunction(t))} — ${FUNCTIONS[baseFunction(t)].name.uk}.`,
       ru: `Это ${label(t, false).ru} — тип квадры «${QUADRAS[t.quadra].name.ru}». Базовая функция: ${baseFunction(t)} — ${FUNCTIONS[baseFunction(t)].name.ru}.`,
     },
     accent: t.quadra,
@@ -267,7 +269,7 @@ function qNameToAbbr(): Question {
     options: [bi(t.ru), ...wrong],
     answer: bi(t.ru),
     explanation: {
-      uk: `${t.name} — це ${t.ru} (${t.intl}), квадра «${QUADRAS[t.quadra].name.uk}».`,
+      uk: `${t.name} — це ${ukAbbr(t.ru)} (${t.intl}), квадра «${QUADRAS[t.quadra].name.uk}».`,
       ru: `${t.name} — это ${t.ru} (${t.intl}), квадра «${QUADRAS[t.quadra].name.ru}».`,
     },
     accent: t.quadra,
@@ -280,13 +282,13 @@ function qAbbrToName(): Question {
   return finalize({
     topic: 'types',
     prompt: {
-      uk: `Як звати тип ${t.ru} (${t.intl})?`,
+      uk: `Як звати тип ${ukAbbr(t.ru)} (${t.intl})?`,
       ru: `Как зовут тип ${t.ru} (${t.intl})?`,
     },
     options: [bi(t.name), ...wrong],
     answer: bi(t.name),
     explanation: {
-      uk: `${t.ru} — ${t.name}. ${t.description.uk}`,
+      uk: `${ukAbbr(t.ru)} — ${t.name}. ${t.description.uk}`,
       ru: `${t.ru} — ${t.name}. ${t.description.ru}`,
     },
     accent: t.quadra,
@@ -298,7 +300,7 @@ function qAbbrToName(): Question {
 function qLetterMeaning(): Question {
   const pairs: { pos: Bi; correct: Bi; wrong: Bi[] }[] = [
     {
-      pos: { uk: 'Перша літера (И або С)', ru: 'Первая буква (И или С)' },
+      pos: { uk: 'Перша літера (І або С)', ru: 'Первая буква (И или С)' },
       correct: { uk: 'Інтуїція або сенсорика — чим сприймає світ', ru: 'Интуиция или сенсорика — чем воспринимает мир' },
       wrong: [
         { uk: 'Логіка або етика — як приймає рішення', ru: 'Логика или этика — как принимает решения' },
@@ -307,7 +309,7 @@ function qLetterMeaning(): Question {
       ],
     },
     {
-      pos: { uk: 'Друга літера (Л або Э)', ru: 'Вторая буква (Л или Э)' },
+      pos: { uk: 'Друга літера (Л або Е)', ru: 'Вторая буква (Л или Э)' },
       correct: { uk: 'Логіка або етика — як приймає рішення', ru: 'Логика или этика — как принимает решения' },
       wrong: [
         { uk: 'Інтуїція або сенсорика — чим сприймає світ', ru: 'Интуиция или сенсорика — чем воспринимает мир' },
@@ -316,7 +318,7 @@ function qLetterMeaning(): Question {
       ],
     },
     {
-      pos: { uk: 'Третя літера (Э або И)', ru: 'Третья буква (Э или И)' },
+      pos: { uk: 'Третя літера (Е або І)', ru: 'Третья буква (Э или И)' },
       correct: { uk: 'Екстраверсія або інтроверсія — звідки енергія', ru: 'Экстраверсия или интроверсия — откуда энергия' },
       wrong: [
         { uk: 'Інтуїція або сенсорика — чим сприймає світ', ru: 'Интуиция или сенсорика — чем воспринимает мир' },
@@ -335,7 +337,7 @@ function qLetterMeaning(): Question {
     options: [p.correct, ...p.wrong],
     answer: p.correct,
     explanation: {
-      uk: 'Абревіатура: 1-ша літера — И/С (інтуїція/сенсорика), 2-га — Л/Э (логіка/етика), 3-тя — Э/И (екстраверт/інтроверт). Раціональність видно в міжнародному записі: маленька літера j або p.',
+      uk: 'Абревіатура: 1-ша літера — І/С (інтуїція/сенсорика), 2-га — Л/Е (логіка/етика), 3-тя — Е/І (екстраверт/інтроверт). Раціональність видно в міжнародному записі: маленька літера j або p.',
       ru: 'Русская аббревиатура: 1-я буква — И/С (интуиция/сенсорика), 2-я — Л/Э (логика/этика), 3-я — Э/И (экстраверт/интроверт). Рациональность видна в международной записи: маленькая буква j или p.',
     },
     accent: rnd((Object.keys(QUADRAS) as QuadraId[])),
@@ -353,17 +355,17 @@ function qCombo(): Question {
     relationOf(t, { ei: true, ns: false, tf: false, rat: false }),
     relationOf(t, { ei: false, ns: true, tf: false, rat: false }),
     relationOf(t, { ei: false, ns: false, tf: true, rat: false }),
-  ].map((x) => ({ uk: `${x.ru} — ${traits(x).uk}`, ru: `${x.ru} — ${traits(x).ru}` }))
+  ].map((x) => ({ uk: `${ukAbbr(x.ru)} — ${traits(x).uk}`, ru: `${x.ru} — ${traits(x).ru}` }))
   return finalize({
     topic: 'dichotomies',
     prompt: {
       uk: `Хто з типів — ${traits(t).uk}?`,
       ru: `Кто из типов — ${traits(t).ru}?`,
     },
-    options: [{ uk: `${t.ru} — ${traits(t).uk}`, ru: `${t.ru} — ${traits(t).ru}` }, ...wrong],
-    answer: { uk: `${t.ru} — ${traits(t).uk}`, ru: `${t.ru} — ${traits(t).ru}` },
+    options: [{ uk: `${ukAbbr(t.ru)} — ${traits(t).uk}`, ru: `${t.ru} — ${traits(t).ru}` }, ...wrong],
+    answer: { uk: `${ukAbbr(t.ru)} — ${traits(t).uk}`, ru: `${t.ru} — ${traits(t).ru}` },
     explanation: {
-      uk: `${t.ru} (${t.name}): ${traits(t).uk}${t.rat === 'rational' ? ', раціонал' : ', ірраціонал'}.`,
+      uk: `${ukAbbr(t.ru)} (${t.name}): ${traits(t).uk}${t.rat === 'rational' ? ', раціонал' : ', ірраціонал'}.`,
       ru: `${t.ru} (${t.name}): ${traits(t).ru}${t.rat === 'rational' ? ', рационал' : ', иррационал'}.`,
     },
     accent: t.quadra,
@@ -385,7 +387,7 @@ function qRationality(): Question {
     options: [bi(correct.ru), ...wrong.map((x) => bi(x.ru))],
     answer: bi(correct.ru),
     explanation: {
-      uk: `${correct.ru} (${correct.name}) — ${wantRational ? 'раціонал' : 'ірраціонал'}. Раціонал/ірраціонал визначається базовою функцією: у раціоналів це логіка або етика, в ірраціоналів — інтуїція або сенсорика. У міжнародному записі: j у раціоналів, p в ірраціоналів.`,
+      uk: `${ukAbbr(correct.ru)} (${correct.name}) — ${wantRational ? 'раціонал' : 'ірраціонал'}. Раціонал/ірраціонал визначається базовою функцією: у раціоналів це логіка або етика, в ірраціоналів — інтуїція або сенсорика. У міжнародному записі: j у раціоналів, p в ірраціоналів.`,
       ru: `${correct.ru} (${correct.name}) — ${wantRational ? 'рационал' : 'иррационал'}. Рационал/иррационал определяется базовой функцией: у рационалов это логика или этика, у иррационалов — интуиция или сенсорика. В международной записи: j у рационалов, p у иррационалов.`,
     },
     accent: correct.quadra,
@@ -398,7 +400,7 @@ function qBaseFunction(): Question {
   const t = rnd(TYPES)
   const correctFn = baseFunction(t)
   const wrong = shuffle((Object.keys(FUNCTIONS) as FunctionId[]).filter((f) => f !== correctFn)).slice(0, 3)
-  const fmt = (f: FunctionId): Bi => ({ uk: `${f} — ${FUNCTIONS[f].name.uk}`, ru: `${f} — ${FUNCTIONS[f].name.ru}` })
+  const fmt = (f: FunctionId): Bi => ({ uk: `${ukAbbr(f)} — ${FUNCTIONS[f].name.uk}`, ru: `${f} — ${FUNCTIONS[f].name.ru}` })
   return finalize({
     topic: 'functions',
     prompt: {
@@ -418,11 +420,11 @@ function qBaseFunction(): Question {
 function qFunctionDef(): Question {
   const f = rnd(Object.keys(FUNCTIONS) as FunctionId[])
   const wrong = shuffle((Object.keys(FUNCTIONS) as FunctionId[]).filter((x) => x !== f)).slice(0, 3)
-  const fmt = (x: FunctionId): Bi => ({ uk: `${x} — ${FUNCTIONS[x].name.uk}`, ru: `${x} — ${FUNCTIONS[x].name.ru}` })
+  const fmt = (x: FunctionId): Bi => ({ uk: `${ukAbbr(x)} — ${FUNCTIONS[x].name.uk}`, ru: `${x} — ${FUNCTIONS[x].name.ru}` })
   return finalize({
     topic: 'functions',
     prompt: {
-      uk: `Що робить функція ${f} (${FUNCTIONS[f].intl})?`,
+      uk: `Що робить функція ${ukAbbr(f)} (${FUNCTIONS[f].intl})?`,
       ru: `Что делает функция ${f} (${FUNCTIONS[f].intl})?`,
     },
     options: [FUNCTIONS[f].definition, ...wrong.map((x) => FUNCTIONS[x].definition)],
@@ -442,13 +444,13 @@ function qWhoHasBase(): Question {
   return finalize({
     topic: 'functions',
     prompt: {
-      uk: `У якого з цих типів базова функція — ${f} (${FUNCTIONS[f].name.uk})?`,
+      uk: `У якого з цих типів базова функція — ${ukAbbr(f)} (${FUNCTIONS[f].name.uk})?`,
       ru: `У какого из этих типов базовая функция — ${f} (${FUNCTIONS[f].name.ru})?`,
     },
     options: [bi(t.ru), ...others.map((x) => bi(x.ru))],
     answer: bi(t.ru),
     explanation: {
-      uk: `${t.ru} (${t.name}) — базова ${f}. В інших варіантів — інша базова функція.`,
+      uk: `${ukAbbr(t.ru)} (${t.name}) — базова ${ukAbbr(f)}. В інших варіантів — інша базова функція.`,
       ru: `${t.ru} (${t.name}) — базовая ${f}. У остальных вариантов другая базовая функция.`,
     },
     accent: t.quadra,
@@ -469,7 +471,7 @@ function qTypeQuadra(): Question {
     options: [QUADRAS[t.quadra].name, ...wrong],
     answer: QUADRAS[t.quadra].name,
     explanation: {
-      uk: `${t.ru} (${t.name}) — квадра «${QUADRAS[t.quadra].name.uk}»: ${QUADRAS[t.quadra].motto.uk.toLowerCase()}.`,
+      uk: `${ukAbbr(t.ru)} (${t.name}) — квадра «${QUADRAS[t.quadra].name.uk}»: ${QUADRAS[t.quadra].motto.uk.toLowerCase()}.`,
       ru: `${t.ru} (${t.name}) — квадра «${QUADRAS[t.quadra].name.ru}»: ${QUADRAS[t.quadra].motto.ru.toLowerCase()}.`,
     },
     accent: t.quadra,
@@ -489,7 +491,7 @@ function qQuadraMember(): Question {
     options: [bi(member), ...outsiders],
     answer: bi(member),
     explanation: {
-      uk: `Квадра «${QUADRAS[q].name.uk}»: ${QUADRAS[q].types.join(', ')}.`,
+      uk: `Квадра «${QUADRAS[q].name.uk}»: ${ukAbbr(QUADRAS[q].types.join(', '))}.`,
       ru: `Квадра «${QUADRAS[q].name.ru}»: ${QUADRAS[q].types.join(', ')}.`,
     },
     accent: q,
@@ -509,7 +511,7 @@ function qQuadraOdd(): Question {
     options: [bi(outsider.ru), ...wrong],
     answer: bi(outsider.ru),
     explanation: {
-      uk: `${outsider.ru} (${outsider.name}) — із квадри «${QUADRAS[outsider.quadra].name.uk}». А «${QUADRAS[q].name.uk}» — це ${QUADRAS[q].types.join(', ')}.`,
+      uk: `${ukAbbr(outsider.ru)} (${outsider.name}) — із квадри «${QUADRAS[outsider.quadra].name.uk}». А «${QUADRAS[q].name.uk}» — це ${ukAbbr(QUADRAS[q].types.join(', '))}.`,
       ru: `${outsider.ru} (${outsider.name}) — из квадры «${QUADRAS[outsider.quadra].name.ru}». А «${QUADRAS[q].name.ru}» — это ${QUADRAS[q].types.join(', ')}.`,
     },
     accent: q,
@@ -524,17 +526,17 @@ function qQuadraDualPair(): Question {
   const wrongKinds = shuffle([activatorOf(t), mirrorOf(t), quasiOf(t), conflictOf(t)])
     .filter((x) => x.ru !== dual.ru)
     .slice(0, 3)
-  const fmt = (x: SocioType): Bi => ({ uk: `${t.ru} та ${x.ru}`, ru: `${t.ru} и ${x.ru}` })
+  const fmt = (x: SocioType): Bi => ({ uk: `${ukAbbr(t.ru)} та ${ukAbbr(x.ru)}`, ru: `${t.ru} и ${x.ru}` })
   return finalize({
     topic: 'quadras',
     prompt: {
-      uk: `Хто — дуал для ${t.ru} (${t.name})?`,
+      uk: `Хто — дуал для ${ukAbbr(t.ru)} (${t.name})?`,
       ru: `Кто — дуал для ${t.ru} (${t.name})?`,
     },
     options: [fmt(dual), ...wrongKinds.map(fmt)],
     answer: fmt(dual),
     explanation: {
-      uk: `Дуал ${t.ru} — ${dual.ru} (${dual.name}). ${RELATION_INFO['дуальность'].uk}`,
+      uk: `Дуал ${ukAbbr(t.ru)} — ${ukAbbr(dual.ru)} (${dual.name}). ${RELATION_INFO['дуальность'].uk}`,
       ru: `Дуал ${t.ru} — ${dual.ru} (${dual.name}). ${RELATION_INFO['дуальность'].ru}`,
     },
     accent: q,
@@ -553,7 +555,7 @@ function qQuadraMotto(): Question {
     options: [QUADRAS[q].description, ...wrong],
     answer: QUADRAS[q].description,
     explanation: {
-      uk: `«${QUADRAS[q].name.uk}» — ${QUADRAS[q].motto.uk.toLowerCase()}: ${QUADRAS[q].description.uk} Типи: ${QUADRAS[q].types.join(', ')}.`,
+      uk: `«${QUADRAS[q].name.uk}» — ${QUADRAS[q].motto.uk.toLowerCase()}: ${QUADRAS[q].description.uk} Типи: ${ukAbbr(QUADRAS[q].types.join(', '))}.`,
       ru: `«${QUADRAS[q].name.ru}» — ${QUADRAS[q].motto.ru.toLowerCase()}: ${QUADRAS[q].description.ru} Типы: ${QUADRAS[q].types.join(', ')}.`,
     },
     accent: q,
@@ -583,7 +585,7 @@ function qRelationByKind(kind: RelationKind): () => Question {
       options: [bi(partner.ru), ...others],
       answer: bi(partner.ru),
       explanation: {
-        uk: `${partner.ru} (${partner.name}). ${RELATION_INFO[kind].uk}`,
+        uk: `${ukAbbr(partner.ru)} (${partner.name}). ${RELATION_INFO[kind].uk}`,
         ru: `${partner.ru} (${partner.name}). ${RELATION_INFO[kind].ru}`,
       },
       accent: t.quadra,
@@ -606,13 +608,13 @@ function qRelationBetween(): Question {
   return finalize({
     topic: 'relations',
     prompt: {
-      uk: `Які стосунки між типами ${t.ru} та ${partner.ru}?`,
+      uk: `Які стосунки між типами ${ukAbbr(t.ru)} та ${ukAbbr(partner.ru)}?`,
       ru: `Какое отношение между типами ${t.ru} и ${partner.ru}?`,
     },
     options: [kindOption(kind), ...wrong.map(kindOption)],
     answer: kindOption(kind),
     explanation: {
-      uk: `${t.ru} і ${partner.ru} — ${lowerFirst(RELATION_NAMES[kind].uk)}. ${RELATION_INFO[kind].uk}`,
+      uk: `${ukAbbr(t.ru)} і ${ukAbbr(partner.ru)} — ${lowerFirst(RELATION_NAMES[kind].uk)}. ${RELATION_INFO[kind].uk}`,
       ru: `${t.ru} и ${partner.ru} — ${kind}. ${RELATION_INFO[kind].ru}`,
     },
     accent: t.quadra,
