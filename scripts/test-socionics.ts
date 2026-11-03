@@ -43,7 +43,7 @@ check('уникальные международные коды', new Set(TYPES.
 check('уникальные имена', new Set(TYPES.map((t) => t.name)).size === 16)
 const combos = new Set(TYPES.map((t) => [t.ei, t.ns, t.tf, t.rat].join('|')))
 check('все 16 комбинаций дихотомий присутствуют (без дыр и дублей)', combos.size === 16)
-check('у всех типов заполнено описание', TYPES.every((t) => t.description.length > 40))
+check('у всех типов заполнено описание (uk и ru)', TYPES.every((t) => t.description.uk.length > 40 && t.description.ru.length > 40))
 
 console.log('\n2) Квадры')
 const expectedQuadras: Record<string, string[]> = {
@@ -120,12 +120,12 @@ console.log('\n11) Генератор вопросов')
 const topics = ['types', 'dichotomies', 'functions', 'quadras', 'relations', 'full'] as const
 for (const topic of topics) {
   const round = buildRound(topic, 10)
-  const prompts = new Set(round.map((q) => q.prompt))
+  const prompts = new Set(round.map((q) => q.prompt.ru))
   const ok = round.length === 10
     && prompts.size === 10
-    && round.every((q) => q.options.length === 4 && new Set(q.options).size === 4)
+    && round.every((q) => q.options.length === 4 && new Set(q.options.map((o) => o.ru)).size === 4)
     && round.every((q) => q.correct >= 0 && q.correct < 4)
-    && round.every((q) => typeof q.explanation === 'string' && q.explanation.length > 10)
+    && round.every((q) => q.explanation.uk.length > 10 && q.explanation.ru.length > 10)
   check(`тема «${topic}»: 10 вопросов, 4 разных варианта, без повторов`, ok)
 }
 
@@ -138,4 +138,4 @@ if (failed > 0) process.exit(1)
 
 // Демонстрация: одна случайная пара для глаза
 const demo = typeByRu('ЛСЭ')
-console.log(`\nПример: ${label(demo, true)} — дуал ${label(dualOf(demo), true)}, конфликт ${label(conflictOf(demo), true)}`)
+console.log(`\nПример: ${label(demo, true).ru} — дуал ${label(dualOf(demo), true).ru}, конфликт ${label(conflictOf(demo), true).ru}`)
