@@ -199,6 +199,11 @@ export default function SocionicsTrainer() {
             <div className="flex-1 bg-emerald-500" />
             <div className="flex-1 bg-amber-500" />
           </div>
+          <img
+            src="/avatar.png"
+            alt={L('Аватар автора тренажера', 'Аватар автора тренажёра')}
+            className="mx-auto mb-4 h-16 w-16 rounded-2xl object-cover shadow-lg ring-1 ring-zinc-200"
+          />
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">{L('Соціоніка: тренажер', 'Соционика: тренажёр')}</h1>
           <p className="mt-3 text-stone-600 leading-relaxed">
             {L(
