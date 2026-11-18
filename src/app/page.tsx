@@ -18,6 +18,10 @@ import {
   RELATION_INFO, RELATION_NAMES, TOPIC_LABELS, TOPIC_HINTS,
   type Question, type Topic, type RelationKind,
 } from '@/lib/socionics-quiz'
+import {
+  LESSONS, lessonById, TOPIC_LESSONS, topicCovered, THEORY_KEY,
+  type LessonBlock, type LessonId,
+} from '@/lib/socionics-theory'
 
 // Квадровые цвета (выбранный дизайн: 4 квадры — 4 цвета)
 const QUADRA_STYLE: Record<QuadraId, { chip: string; bar: string; soft: string; text: string; border: string }> = {
@@ -94,7 +98,7 @@ const TERMS: { term: Bi; text: Bi }[] = [
   ...RELATION_ORDER.map((k) => ({ term: RELATION_NAMES[k], text: RELATION_INFO[k] })),
 ]
 
-type Screen = 'start' | 'quiz' | 'result' | 'glossary'
+type Screen = 'start' | 'quiz' | 'result' | 'glossary' | 'theory' | 'lesson'
 type Records = Partial<Record<Topic, number>>
 const QUESTIONS_PER_ROUND = 10
 const RECORDS_KEY = 'socionika-records'
@@ -163,6 +167,10 @@ export default function SocionicsTrainer() {
   const [isNewRecord, setIsNewRecord] = useState(false)
   const [glossaryTab, setGlossaryTab] = useState<'types' | 'model' | 'terms'>('types')
   const [modelType, setModelType] = useState('ИЛЭ')
+  // Теорія перед грою: прогрес уроків і відповіді на міні-перевірки
+  const [theoryDone, setTheoryDone] = useState<Partial<Record<LessonId, boolean>>>({})
+  const [lessonId, setLessonId] = useState<LessonId>('l1')
+  const [cpPick, setCpPick] = useState<Record<string, number | null>>({})
 
   // Рекорды читаем из localStorage после монтирования
   useEffect(() => {
@@ -170,6 +178,8 @@ export default function SocionicsTrainer() {
       try {
         const raw = localStorage.getItem(RECORDS_KEY)
         if (raw) setRecords(JSON.parse(raw) as Records)
+        const th = localStorage.getItem(THEORY_KEY)
+        if (th) setTheoryDone(JSON.parse(th) as Partial<Record<LessonId, boolean>>)
       } catch { /* приватный режим — просто без рекордов */ }
     })
   }, [])
@@ -184,6 +194,22 @@ export default function SocionicsTrainer() {
     setBestStreak(0)
     setIsNewRecord(false)
     setScreen('quiz')
+  }
+
+  // Урок зараховано — зберігаємо прогрес теорії
+  function markLessonDone(id: LessonId): void {
+    setTheoryDone((prev) => {
+      if (prev[id]) return prev
+      const updated = { ...prev, [id]: true }
+      try { localStorage.setItem(THEORY_KEY, JSON.stringify(updated)) } catch { /* приватный режим */ }
+      return updated
+    })
+  }
+
+  function openLesson(id: LessonId): void {
+    setLessonId(id)
+    setCpPick({})
+    setScreen('lesson')
   }
 
   function handleSelect(i: number): void {
@@ -254,7 +280,27 @@ export default function SocionicsTrainer() {
           <NotationToggle intl={intl} setIntl={setIntl} className="mt-5 justify-center" />
         </header>
 
-        <div className="grid sm:grid-cols-2 gap-3">
+        <button
+          onClick={() => setScreen('theory')}
+          className="w-full rounded-2xl bg-stone-900 text-white p-4 sm:p-5 text-left transition-all hover:bg-stone-700 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-lg font-extrabold">🎓 {L('Теорія перед грою', 'Теория перед игрой')}</div>
+              <div className="text-sm text-stone-300 mt-1">
+                {L(
+                  '6 коротких уроків з міні-перевірками: спершу розберись — потім перевіряй себе у вікторині',
+                  '6 коротких уроков с мини-проверками: сначала разберись — потом проверяй себя в викторине',
+                )}
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-sm font-bold">
+              {LESSONS.filter((l) => theoryDone[l.id]).length}/{LESSONS.length}
+            </span>
+          </div>
+        </button>
+
+        <div className="grid sm:grid-cols-2 gap-3 mt-6">
           {TOPICS.map((t) => {
             const q = TOPIC_QUADRA[t]
             const best = records[t]
@@ -268,7 +314,10 @@ export default function SocionicsTrainer() {
                   <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${QUADRA_STYLE[q].chip}`}>
                     {B(TOPIC_LABELS[t])}
                   </span>
-                  {best !== undefined && <span className="text-xs text-stone-500">{L(`рекорд ${best}/10`, `рекорд ${best}/10`)}</span>}
+                  <span className="flex items-center gap-2">
+                    {topicCovered(t, theoryDone) && <span className="text-xs font-bold text-emerald-600">✓ {L('теорія', 'теория')}</span>}
+                    {best !== undefined && <span className="text-xs text-stone-500">{L(`рекорд ${best}/10`, `рекорд ${best}/10`)}</span>}
+                  </span>
                 </div>
                 <div className="mt-2 font-semibold">{B(TOPIC_HINTS[t])}</div>
               </button>
@@ -359,6 +408,236 @@ export default function SocionicsTrainer() {
     )
   }
 
+  // ---------- Экран: список уроков теории ----------
+  if (screen === 'theory') {
+    const doneCount = LESSONS.filter((l) => theoryDone[l.id]).length
+    return (
+      <Shell>
+        <div className="flex items-center justify-between gap-3">
+          <button onClick={() => setScreen('start')} className="text-stone-500 hover:text-stone-800 font-medium">
+            {L('← До тем', '← К темам')}
+          </button>
+          <span className="text-sm font-bold text-stone-600">{doneCount}/{LESSONS.length} {L('пройдено', 'пройдено')}</span>
+        </div>
+
+        <h2 className="mt-4 text-2xl font-extrabold">🎓 {L('Теорія перед грою', 'Теория перед игрой')}</h2>
+        <p className="mt-2 text-stone-600 leading-relaxed">
+          {L(
+            'Прочитай урок і відповісь на міні-перевірки всередині (помилки можна виправляти). Коли всі — правильні, відкриється «Перевірка знань»: справжній раунд вікторини на тему уроку. Так відповіді будуть не навмання, а перевіркою засвоєного.',
+            'Прочитай урок и ответь на мини-проверки внутри (ошибки можно исправлять). Когда все — правильные, откроется «Проверка знаний»: настоящий раунд викторины на тему урока. Так ответы будут не наугад, а проверкой усвоенного.',
+          )}
+        </p>
+
+        <div className="mt-5 grid gap-3">
+          {LESSONS.map((l, i) => {
+            const done = theoryDone[l.id]
+            return (
+              <div key={l.id} className={`bg-white rounded-2xl border-2 p-4 sm:p-5 ${done ? 'border-emerald-300' : 'border-stone-200'}`}>
+                <button onClick={() => openLesson(l.id)} className="w-full text-left focus:outline-none">
+                  <div className="flex items-center gap-3">
+                    <span className={`shrink-0 w-8 h-8 rounded-full grid place-items-center text-sm font-bold ${done ? 'bg-emerald-500 text-white' : 'bg-stone-900 text-white'}`}>
+                      {done ? '✓' : i + 1}
+                    </span>
+                    <span className="font-bold">{B(l.title)}</span>
+                  </div>
+                  <div className="mt-2 text-sm text-stone-500">{B(l.subtitle)}</div>
+                </button>
+                <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs text-stone-400">
+                    ⏱ {l.minutes} {L('хв', 'мин')} · {B(TOPIC_LABELS[l.topic])}
+                  </span>
+                  {done && (
+                    <button
+                      onClick={() => startRound(l.topic)}
+                      className="rounded-lg bg-emerald-600 text-white px-3.5 py-1.5 text-sm font-semibold hover:bg-emerald-500 transition-colors"
+                    >
+                      {L('Перевірка знань →', 'Проверка знаний →')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </Shell>
+    )
+  }
+
+  // ---------- Экран: читалка урока ----------
+  if (screen === 'lesson') {
+    const les = lessonById(lessonId)
+    const idx = LESSONS.findIndex((x) => x.id === lessonId)
+    const next = LESSONS[idx + 1]
+    if (!les) {
+      return (
+        <Shell>
+          <button onClick={() => setScreen('theory')} className="text-stone-500 hover:text-stone-800 font-medium">
+            {L('← До уроків', '← К урокам')}
+          </button>
+        </Shell>
+      )
+    }
+    const cps = les.blocks.filter((b): b is Extract<LessonBlock, { kind: 'check' }> => b.kind === 'check')
+    const allCorrect = cps.length > 0 && cps.every((b) => cpPick[b.cp.id] === b.cp.correct)
+    return (
+      <Shell>
+        <div className="flex items-center justify-between gap-3">
+          <button onClick={() => setScreen('theory')} className="text-stone-500 hover:text-stone-800 font-medium">
+            {L('← До уроків', '← К урокам')}
+          </button>
+          <span className="text-sm text-stone-500">⏱ {les.minutes} {L('хв', 'мин')} · {B(TOPIC_LABELS[les.topic])}</span>
+        </div>
+
+        <h2 className="mt-4 text-2xl font-extrabold">{idx + 1}. {B(les.title)}</h2>
+        <p className="mt-1 text-stone-500 leading-relaxed">{B(les.subtitle)}</p>
+
+        <div className="mt-5 grid gap-3.5">
+          {les.blocks.map((b, i) => {
+            if (b.kind === 'p') {
+              return <p key={i} className="leading-relaxed text-stone-800">{B(b.text)}</p>
+            }
+            if (b.kind === 'h') {
+              return <h3 key={i} className="mt-1.5 text-lg font-bold">{B(b.text)}</h3>
+            }
+            if (b.kind === 'list') {
+              return (
+                <ul key={i} className="grid gap-1.5">
+                  {b.items.map((it, j) => (
+                    <li key={j} className="flex gap-2 leading-relaxed text-stone-800">
+                      <span className="mt-1 text-stone-400">•</span><span>{B(it)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )
+            }
+            if (b.kind === 'table') {
+              return (
+                <div key={i} className="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr>
+                        {b.head.map((h, j) => (
+                          <th key={j} className="bg-stone-800 text-white px-2.5 py-2 text-left font-semibold">{B(h)}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {b.rows.map((r, j) => (
+                        <tr key={j} className={j % 2 === 1 ? 'bg-stone-50' : 'bg-white'}>
+                          {r.map((c, k) => (
+                            <td key={k} className="border-t border-stone-200 px-2.5 py-2 align-top leading-snug">{B(c)}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            }
+            if (b.kind === 'example') {
+              return (
+                <div key={i} className="rounded-xl border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-stone-800">
+                  {B(b.text)}
+                </div>
+              )
+            }
+            // Міні-перевірка: помилку можна виправити, поки не буде правильно
+            const cp = b.cp
+            const pick = cpPick[cp.id]
+            const answered = pick !== undefined && pick !== null
+            const correctPick = pick === cp.correct
+            return (
+              <div key={i} className={`rounded-xl border-2 p-4 ${answered ? (correctPick ? 'border-emerald-400 bg-emerald-50' : 'border-rose-300 bg-rose-50') : 'border-stone-300 bg-white'}`}>
+                <div className="font-semibold leading-snug">✔ {B(cp.q)}</div>
+                <div className="mt-2.5 grid gap-2">
+                  {cp.options.map((opt, j) => {
+                    const chosen = pick === j
+                    const reveal = answered && (chosen || j === cp.correct)
+                    return (
+                      <button
+                        key={j}
+                        onClick={() => {
+                          if (answered && correctPick) return
+                          const next = { ...cpPick, [cp.id]: j }
+                          setCpPick(next)
+                          // Всі міні-перевірки відповіли правильно — урок пройдено
+                          const all = cps.length > 0 && cps.every((b) => next[b.cp.id] === b.cp.correct)
+                          if (all) markLessonDone(les.id)
+                        }}
+                        disabled={answered && correctPick}
+                        className={`flex items-start gap-2.5 text-left rounded-lg border-2 px-3 py-2 text-sm transition-all min-h-[40px] ${
+                          reveal ? (j === cp.correct ? 'border-emerald-500 bg-emerald-100' : 'border-rose-400 bg-rose-100')
+                          : 'border-stone-200 bg-white hover:border-stone-400'
+                        }`}
+                      >
+                        <span className={`shrink-0 w-5 h-5 rounded-full border-2 grid place-items-center text-[11px] font-bold ${
+                          reveal && j === cp.correct ? 'border-emerald-600 text-emerald-700 bg-emerald-50'
+                          : reveal ? 'border-rose-500 text-rose-600 bg-rose-50'
+                          : 'border-stone-300 text-stone-500'
+                        }`}>{LETTERS[j]}</span>
+                        <span className="leading-snug pt-0.5">{B(opt)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                {answered && (
+                  <p className="mt-2.5 text-sm leading-relaxed text-stone-700">
+                    <b className="font-bold">
+                      {correctPick ? L('✅ Так! ', '✅ Верно! ') : L('❌ Не зовсім — спробуй ще раз. ', '❌ Не совсем — попробуй ещё раз. ')}
+                    </b>
+                    {B(cp.why)}
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {allCorrect ? (
+          <div className="mt-6 rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-5">
+            <div className="text-lg font-extrabold">✅ {L('Урок пройдено!', 'Урок пройден!')}</div>
+            <p className="mt-1 text-sm text-stone-600 leading-relaxed">
+              {L(
+                'Міні-перевірки складено — тепер теорію можна перевірити справжнім раундом вікторини.',
+                'Мини-проверки сданы — теперь теорию можно проверить настоящим раундом викторины.',
+              )}
+            </p>
+            <div className="mt-4 grid sm:grid-cols-2 gap-2.5">
+              <button
+                onClick={() => startRound(les.topic)}
+                className="rounded-xl bg-stone-900 text-white py-3 font-semibold hover:bg-stone-700 transition-colors"
+              >
+                {L('Перевірка знань', 'Проверка знаний')}: {B(TOPIC_LABELS[les.topic])} →
+              </button>
+              {next ? (
+                <button
+                  onClick={() => openLesson(next.id)}
+                  className="rounded-xl border-2 border-stone-300 py-3 font-semibold hover:border-stone-500 transition-colors"
+                >
+                  {L('Наступний урок →', 'Следующий урок →')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => startRound('full')}
+                  className="rounded-xl border-2 border-stone-300 py-3 font-semibold hover:border-stone-500 transition-colors"
+                >
+                  {L('Повний курс: усі теми →', 'Полный курс: все темы →')}
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p className="mt-6 text-center text-sm text-stone-500">
+            {L(
+              'Відповідай на міні-перевірки нижче — після всіх правильних відкриється перевірка знань.',
+              'Отвечай на мини-проверки ниже — после всех правильных откроется проверка знаний.',
+            )}
+          </p>
+        )}
+      </Shell>
+    )
+  }
+
   // ---------- Экран: результат ----------
   if (screen === 'result') {
     const pct = Math.round((score / questions.length) * 100)
@@ -382,6 +661,14 @@ export default function SocionicsTrainer() {
             </div>
           )}
           <p className="mt-4 text-stone-600">{verdict}</p>
+          {pct < 70 && topic !== 'full' && !topicCovered(topic, theoryDone) && (
+            <button
+              onClick={() => openLesson(TOPIC_LESSONS[topic][0])}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border-2 border-stone-300 px-4 py-2 text-sm font-semibold hover:border-stone-500 transition-colors"
+            >
+              📚 {L('Спершу пройди урок теорії', 'Сначала пройди урок теории')} →
+            </button>
+          )}
           <div className="mt-7 grid sm:grid-cols-2 gap-3">
             <button onClick={() => startRound(topic)} className="rounded-xl bg-stone-900 text-white py-3 font-semibold hover:bg-stone-700 transition-colors">
               {L('Ще раунд', 'Ещё раунд')}
